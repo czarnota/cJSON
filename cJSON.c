@@ -1548,68 +1548,6 @@ fail:
     return false;
 }
 
-/* Render an array to text */
-static cJSON_bool print_array(const cJSON * const item, printbuffer * const output_buffer)
-{
-    unsigned char *output_pointer = NULL;
-    size_t length = 0;
-    cJSON *current_element = item->child;
-
-    if (output_buffer == NULL)
-    {
-        return false;
-    }
-
-    /* Compose the output array. */
-    /* opening square bracket */
-    output_pointer = ensure(output_buffer, 1);
-    if (output_pointer == NULL)
-    {
-        return false;
-    }
-
-    *output_pointer = '[';
-    output_buffer->offset++;
-    output_buffer->depth++;
-
-    while (current_element != NULL)
-    {
-        if (!print_value(current_element, output_buffer))
-        {
-            return false;
-        }
-        update_offset(output_buffer);
-        if (current_element->next)
-        {
-            length = (size_t) (output_buffer->format ? 2 : 1);
-            output_pointer = ensure(output_buffer, length + 1);
-            if (output_pointer == NULL)
-            {
-                return false;
-            }
-            *output_pointer++ = ',';
-            if(output_buffer->format)
-            {
-                *output_pointer++ = ' ';
-            }
-            *output_pointer = '\0';
-            output_buffer->offset += length;
-        }
-        current_element = current_element->next;
-    }
-
-    output_pointer = ensure(output_buffer, 2);
-    if (output_pointer == NULL)
-    {
-        return false;
-    }
-    *output_pointer++ = ']';
-    *output_pointer = '\0';
-    output_buffer->depth--;
-
-    return true;
-}
-
 /* Build an object from the text. */
 static cJSON_bool parse_object(cJSON * const item, parse_buffer * const input_buffer)
 {
@@ -1729,7 +1667,7 @@ fail:
 }
 
 /* Render an object to text. */
-static cJSON_bool print_object(const cJSON * const item, printbuffer * const output_buffer)
+static cJSON_bool print_object_generic(const cJSON *const item, printbuffer *const output_buffer, const char *delimiters, cJSON_bool print_key)
 {
     unsigned char *output_pointer = NULL;
     size_t length = 0;
@@ -1748,7 +1686,7 @@ static cJSON_bool print_object(const cJSON * const item, printbuffer * const out
         return false;
     }
 
-    *output_pointer++ = '{';
+    *output_pointer++ = delimiters[0];
     output_buffer->depth++;
     if (output_buffer->format)
     {
@@ -1776,25 +1714,27 @@ static cJSON_bool print_object(const cJSON * const item, printbuffer * const out
             output_buffer->offset += indent_size;
         }
 
-        /* print key */
-        if (!print_string_ptr((unsigned char*)current_item->string, output_buffer))
-        {
-            return false;
-        }
-        update_offset(output_buffer);
+        if (print_key) {
+            /* print key */
+            if (!print_string_ptr((unsigned char*)current_item->string, output_buffer))
+            {
+                return false;
+            }
+            update_offset(output_buffer);
 
-        length = (size_t) (output_buffer->format ? 2 : 1);
-        output_pointer = ensure(output_buffer, length);
-        if (output_pointer == NULL)
-        {
-            return false;
+            length = (size_t) (output_buffer->format ? 2 : 1);
+            output_pointer = ensure(output_buffer, length);
+            if (output_pointer == NULL)
+            {
+                return false;
+            }
+            *output_pointer++ = ':';
+            if (output_buffer->format)
+            {
+                *output_pointer++ = ' ';
+            }
+            output_buffer->offset += length;
         }
-        *output_pointer++ = ':';
-        if (output_buffer->format)
-        {
-            *output_pointer++ = ' ';
-        }
-        output_buffer->offset += length;
 
         /* print value */
         if (!print_value(current_item, output_buffer))
@@ -1825,7 +1765,9 @@ static cJSON_bool print_object(const cJSON * const item, printbuffer * const out
         current_item = current_item->next;
     }
 
-    output_pointer = ensure(output_buffer, output_buffer->format ? (output_buffer->depth + 1) : 2);
+    size_t indent_size = (output_buffer->depth - 1U) * 4U;
+
+    output_pointer = ensure(output_buffer, output_buffer->format ? (indent_size + 2) : 2);
     if (output_pointer == NULL)
     {
         return false;
@@ -1834,18 +1776,27 @@ static cJSON_bool print_object(const cJSON * const item, printbuffer * const out
     {
         size_t i;
 
-        size_t indent_size = (output_buffer->depth - 1U) * 4U;
-
         for (i = 0; i < indent_size; i++)
         {
             *output_pointer++ = ' ';
         }
     }
-    *output_pointer++ = '}';
+    *output_pointer++ = delimiters[1];
     *output_pointer = '\0';
     output_buffer->depth--;
 
     return true;
+}
+
+static cJSON_bool print_object(const cJSON * const item, printbuffer * const output_buffer)
+{
+    return print_object_generic(item, output_buffer, "{}", 1);
+}
+
+/* Render an array to text */
+static cJSON_bool print_array(const cJSON * const item, printbuffer * const output_buffer)
+{
+    return print_object_generic(item, output_buffer, "[]", false);
 }
 
 /* Get Array size/item / object item. */
