@@ -105,7 +105,6 @@ foreach(compiler_flag ${custom_compiler_flags})
     endif()
 endforeach()
 
-option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(ENABLE_TARGET_EXPORT "Enable exporting of CMake targets. Disable when it causes problems!" ON)
 
 #cJSON
