@@ -1761,16 +1761,19 @@ static cJSON_bool print_object(const cJSON * const item, printbuffer * const out
         if (output_buffer->format)
         {
             size_t i;
-            output_pointer = ensure(output_buffer, output_buffer->depth);
+
+            size_t indent_size = output_buffer->depth * 4U;
+
+            output_pointer = ensure(output_buffer, indent_size);
             if (output_pointer == NULL)
             {
                 return false;
             }
-            for (i = 0; i < output_buffer->depth; i++)
+            for (i = 0; i < indent_size; i++)
             {
-                *output_pointer++ = '\t';
+                *output_pointer++ = ' ';
             }
-            output_buffer->offset += output_buffer->depth;
+            output_buffer->offset += indent_size;
         }
 
         /* print key */
@@ -1830,9 +1833,12 @@ static cJSON_bool print_object(const cJSON * const item, printbuffer * const out
     if (output_buffer->format)
     {
         size_t i;
-        for (i = 0; i < (output_buffer->depth - 1); i++)
+
+        size_t indent_size = (output_buffer->depth - 1U) * 4U;
+
+        for (i = 0; i < indent_size; i++)
         {
-            *output_pointer++ = '\t';
+            *output_pointer++ = ' ';
         }
     }
     *output_pointer++ = '}';
