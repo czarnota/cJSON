@@ -1666,12 +1666,25 @@ fail:
     return false;
 }
 
+static int try_uchar_from_char(unsigned char *val, char c)
+{
+    if (c < 0)
+    {
+        return -1;
+    }
+
+    *val = (unsigned char)c;
+    return 0;
+}
+
 /* Render an object to text. */
 static cJSON_bool print_object_generic(const cJSON *const item, printbuffer *const output_buffer, const char *delimiters, cJSON_bool print_key)
 {
     unsigned char *output_pointer = NULL;
     size_t length = 0;
     cJSON *current_item = item->child;
+    int err = 0;
+    size_t indent_size = 0;
 
     if (output_buffer == NULL)
     {
@@ -1686,7 +1699,10 @@ static cJSON_bool print_object_generic(const cJSON *const item, printbuffer *con
         return false;
     }
 
-    *output_pointer++ = delimiters[0];
+    err = try_uchar_from_char(output_pointer++, delimiters[0]);
+    if (err)
+        return false;
+
     output_buffer->depth++;
     if (output_buffer->format)
     {
@@ -1700,7 +1716,7 @@ static cJSON_bool print_object_generic(const cJSON *const item, printbuffer *con
         {
             size_t i;
 
-            size_t indent_size = output_buffer->depth * 4U;
+            indent_size = output_buffer->depth * 4U;
 
             output_pointer = ensure(output_buffer, indent_size);
             if (output_pointer == NULL)
@@ -1765,7 +1781,7 @@ static cJSON_bool print_object_generic(const cJSON *const item, printbuffer *con
         current_item = current_item->next;
     }
 
-    size_t indent_size = (output_buffer->depth - 1U) * 4U;
+    indent_size = (output_buffer->depth - 1U) * 4U;
 
     output_pointer = ensure(output_buffer, output_buffer->format ? (indent_size + 2) : 2);
     if (output_pointer == NULL)
@@ -1781,7 +1797,11 @@ static cJSON_bool print_object_generic(const cJSON *const item, printbuffer *con
             *output_pointer++ = ' ';
         }
     }
-    *output_pointer++ = delimiters[1];
+
+    err = try_uchar_from_char(output_pointer++, delimiters[0]);
+    if (err)
+        return false;
+
     *output_pointer = '\0';
     output_buffer->depth--;
 
