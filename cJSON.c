@@ -1798,7 +1798,7 @@ static cJSON_bool print_object_generic(const cJSON *const item, printbuffer *con
         }
     }
 
-    err = try_uchar_from_char(output_pointer++, delimiters[0]);
+    err = try_uchar_from_char(output_pointer++, delimiters[1]);
     if (err)
         return false;
 
